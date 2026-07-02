@@ -187,8 +187,8 @@ class DataProcessor {
                 'ФИО засыльщика': extracted.username,
                 'Компания': extracted.company,
                 'Дата засыла': extracted.date,
-                'Почему не засыл?': extracted.reason,
-                'Статус': extracted.status
+                'Почему не засыл?': '',
+                'Статус': ''
             };
             
             merged.push(record);
@@ -238,6 +238,7 @@ class DataProcessor {
      * 1. Если username = sc-robot-ship - ищем ФИО из предыдущих операций
      * 2. Если зона содержит "Первичная приемка" или "Приемка" - ФИО не ставим
      * 3. "Почему не засыл" - оставляем пустым всегда
+     * 4. Статус - не заполняем (пользователь ставит сам)
      */
     extractDataFromLogs(allLogs) {
         const result = {
@@ -246,8 +247,8 @@ class DataProcessor {
             username: '',
             company: '',
             date: '',
-            reason: '',      // Всегда пусто
-            status: 'Не засыл'
+            reason: '',
+            status: ''
         };
         
         if (allLogs.length === 0) return result;
@@ -320,19 +321,11 @@ class DataProcessor {
             result.username = bestLog.username || '';
         }
         
-        // Определяем статус
-        const hasSortOk = sortedLogs.some(row => 
-            row.flow_name === 'SORT' && row.result === 'OK'
-        );
-        
-        if (hasSortOk) {
-            result.status = 'Засыл';
-        } else {
-            result.status = 'Не засыл';
-        }
-        
         // reason всегда пустой
         result.reason = '';
+        
+        // status всегда пустой - пользователь ставит сам
+        result.status = '';
         
         return result;
     }
@@ -340,18 +333,18 @@ class DataProcessor {
     getStatistics(data = null) {
         const d = data || this.processedData;
         const total = d.length;
-        const zasyls = d.filter(r => r['Статус'] === 'Засыл').length;
-        const noZasyls = d.filter(r => r['Статус'] === 'Не засыл').length;
         const totalCost = d.reduce((sum, r) => sum + (parseFloat(r['Стоимость']) || 0), 0);
+        const withZone = d.filter(r => r['Зона сортировки'] && r['Зона сортировки'] !== '-' && r['Зона сортировки'] !== '').length;
+        const withUser = d.filter(r => r['ФИО засыльщика'] && r['ФИО засыльщика'] !== '-' && r['ФИО засыльщика'] !== '').length;
         
         return {
             total,
-            zasyls,
-            noZasyls,
+            withZone,
+            withUser,
             totalCost,
             avgCost: total > 0 ? Math.round(totalCost / total) : 0,
-            zasylsPercentage: total > 0 ? ((zasyls / total) * 100).toFixed(1) : '0',
-            noZasylsPercentage: total > 0 ? ((noZasyls / total) * 100).toFixed(1) : '0'
+            zonePercentage: total > 0 ? ((withZone / total) * 100).toFixed(1) : '0',
+            userPercentage: total > 0 ? ((withUser / total) * 100).toFixed(1) : '0'
         };
     }
 
