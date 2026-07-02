@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>Тест чтения Excel</title>
+    <script src="https://cdn.sheetjs.com/xlsx-0.20.0/package/dist/xlsx.full.min.js"></script>
+    <style>
+        body { font-family: monospace; padding: 20px; background: #1a1a2e; color: #eee; }
+        .section { margin: 20px 0; padding: 15px; background: #16213e; border-radius: 8px; }
+        h2 { color: #667eea; }
+        h3 { color: #84fab0; }
+        table { border-collapse: collapse; width: 100%; font-size: 12px; }
+        th, td { border: 1px solid #334155; padding: 4px 8px; text-align: left; }
+        th { background: #0f3460; }
+        .highlight { background: #1a3a1a; }
+        input { padding: 10px; margin: 10px 0; font-size: 16px; }
+        pre { background: #0f172a; padding: 10px; border-radius: 5px; overflow-x: auto; }
+    </style>
+</head>
+<body>
+    <h1>🔍 Тест чтения Excel файлов</h1>
+    
+    <div class="section">
+        <h2>1. Загрузи файл засылов:</h2>
+        <input type="file" id="zasylsFile" accept=".xlsx,.xls">
+        <div id="zasylsResult"></div>
+    </div>
+    
+    <div class="section">
+        <h2>2. Загрузи файл заказов (логов):</h2>
+        <input type="file" id="ordersFile" accept=".xlsx,.xls">
+        <div id="ordersResult"></div>
+    </div>
+    
+    <script>
+        function readFileAndDisplay(file, resultDivId) {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    try {
+                        const data = new Uint8Array(e.target.result);
+                        const workbook = XLSX.read(data, { type: 'array' });
+                        
+                        const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
+                        
+                        // Читаем как массив массивов
+                        const allData = XLSX.utils.sheet_to_json(firstSheet, { 
+                            header: 1,
+                            defval: '',
+                            raw: false
+                        });
+                        
+                        let html = '';
+                        
+                        // Информация о листе
+                        html += `<p>📄 Лист: <b>${workbook.SheetNames[0]}</b></p>`;
+                        html += `<p>📊 Всего строк (включая заголовки): <b>${allData.length}</b></p>`;
+                        
+                        // Заголовки
+                        const headers = allData[0];
+                        html += `<h3>📋 Заголовки (${headers.length} колонок):</h3>`;
+                        html += `<table><tr>`;
+                        headers.forEach((h, i) => {
+                            html += `<th>${i}: ${h || '(пусто)'}</th>`;
+                        });
+                        html += `</tr></table>`;
+                        
+                        // Данные (первые 5 строк)
+                        const dataRows = allData.slice(1).filter(row => {
+                            return row.some(cell => cell !== '' && cell !== undefined && cell !== null);
+                        });
+                        
+                        html += `<p>📊 Строк с данными (после фильтрации): <b>${dataRows.length}</b></p>`;
+                        
+                        html += `<h3>📝 Первые 5 строк данных:</h3>`;
+                        html += `<table>`;
+                        html += `<tr>${headers.map(h => `<th>${h || '(пусто)'}</th>`).join('')}</tr>`;
+                        
+                        for (let i = 0; i < Math.min(5, dataRows.length); i++) {
+                            html += `<tr>`;
+                            dataRows[i].forEach(cell => {
+                                html += `<td>${cell || ''}</td>`;
+                            });
+                            html += `</tr>`;
+                        }
+                        html += `</table>`;
+                        
+                        // Конвертируем в объекты
+                        const objects = dataRows.map(row => {
+                            const obj = {};
+                            headers.forEach((header, index) => {
+                                if (header && header !== '') {
+                                    obj[String(header).trim()] = row[index] || '';
+                                }
+                            });
+                            return obj;
+                        });
+                        
+                        html += `<p>📊 Всего объектов: <b>${objects.length}</b></p>`;
+                        
+                        // Первые 3 объекта в JSON
+                        html += `<h3>📝 Первые 3 объекта (JSON):</h3>`;
+                        objects.slice(0, 3).forEach((obj, i) => {
+                            html += `<pre>Объект ${i}: ${JSON.stringify(obj, null, 2)}</pre>`;
+                        });
+                        
+                        // Показываем уникальные значения ключей
+                        if (objects.length > 0) {
+                            html += `<h3>🔑 Ключи первого объекта:</h3>`;
+                            html += `<pre>${JSON.stringify(Object.keys(objects[0]), null, 2)}</pre>`;
+                        }
+                        
+                        document.getElementById(resultDivId).innerHTML = html;
+                        
+                        resolve({
+                            headers: headers.filter(h => h !== ''),
+                            objects: objects,
+                            totalRows: objects.length
+                        });
+                        
+                    } catch (error) {
+                        document.getElementById(resultDivId).innerHTML = 
+                            `<h3 style="color:red;">❌ Ошибка: ${error.message}</h3>`;
+                        reject(error);
+                    }
+                };
+                reader.readAsArrayBuffer(file);
+            });
+        }
+        
+        document.getElementById('zasylsFile').addEventListener('change', async function(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+            
+            document.getElementById('zasylsResult').innerHTML = '<p>⏳ Читаем файл...</p>';
+            
+            try {
+                await readFileAndDisplay(file, 'zasylsResult');
+            } catch (error) {
+                console.error(error);
+            }
+        });
+        
+        document.getElementById('ordersFile').addEventListener('change', async function(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+            
+            document.getElementById('ordersResult').innerHTML = '<p>⏳ Читаем файл...</p>';
+            
+            try {
+                await readFileAndDisplay(file, 'ordersResult');
+            } catch (error) {
+                console.error(error);
+            }
+        });
+    </script>
+</body>
+</html>

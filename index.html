@@ -1,0 +1,600 @@
+<!DOCTYPE html>
+<html lang="ru" data-bs-theme="light">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ZasylPro | Премиум система управления засылами</title>
+    
+    <!-- Favicon -->
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📦</text></svg>">
+    
+    <!-- Bootstrap 5 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    
+    <!-- Bootstrap Icons -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
+    
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Manrope:wght@200;300;400;500;600;700;800&display=swap" rel="stylesheet">
+    
+    <!-- Animate.css -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css" rel="stylesheet">
+    
+    <!-- DataTables CSS -->
+    <link href="https://cdn.datatables.net/1.13.4/css/dataTables.bootstrap5.min.css" rel="stylesheet">
+    
+    <!-- Select2 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/select2-bootstrap-5-theme@1.3.0/dist/select2-bootstrap-5-theme.min.css" rel="stylesheet">
+    
+    <!-- SweetAlert2 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css" rel="stylesheet">
+    
+    <!-- Кастомные стили -->
+    <link href="css/style.css" rel="stylesheet">
+</head>
+<body>
+    <!-- Прелоадер -->
+    <div class="preloader" id="preloader">
+        <div class="preloader-content">
+            <div class="preloader-logo">
+                <svg width="60" height="60" viewBox="0 0 60 60">
+                    <circle cx="30" cy="30" r="25" fill="none" stroke="url(#gradient)" stroke-width="3" stroke-dasharray="157" stroke-dashoffset="157">
+                        <animate attributeName="stroke-dashoffset" from="157" to="0" dur="1.5s" fill="freeze"/>
+                    </circle>
+                    <defs>
+                        <linearGradient id="gradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                            <stop offset="0%" style="stop-color:#667eea;stop-opacity:1" />
+                            <stop offset="100%" style="stop-color:#764ba2;stop-opacity:1" />
+                        </linearGradient>
+                    </defs>
+                </svg>
+                <span class="preloader-text">ZasylPro</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Навигационная панель -->
+    <nav class="navbar navbar-expand-lg fixed-top" id="mainNav">
+        <div class="container-fluid">
+            <a class="navbar-brand" href="#">
+                <div class="brand-icon">
+                    <i class="bi bi-hexagon-fill"></i>
+                </div>
+                <span class="brand-text">Zasyl<span class="text-gradient">Pro</span></span>
+            </a>
+            
+            <div class="d-flex align-items-center gap-3 ms-auto">
+                <!-- Переключатель темы -->
+                <button class="btn btn-icon theme-toggle" id="themeToggle" title="Переключить тему">
+                    <i class="bi bi-sun-fill theme-icon-light"></i>
+                    <i class="bi bi-moon-fill theme-icon-dark"></i>
+                </button>
+                
+                <!-- Кнопка фильтров -->
+                <button class="btn btn-icon filter-toggle" id="filterToggle" title="Фильтры">
+                    <i class="bi bi-sliders"></i>
+                </button>
+                
+                <!-- Кнопка уведомлений -->
+                <button class="btn btn-icon position-relative" id="notificationsBtn" title="Уведомления">
+                    <i class="bi bi-bell"></i>
+                    <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger" id="notificationsBadge" style="display: none;">
+                        0
+                    </span>
+                </button>
+                
+                <!-- Профиль -->
+                <div class="dropdown">
+                    <button class="btn btn-profile dropdown-toggle" type="button" data-bs-toggle="dropdown">
+                        <div class="avatar">
+                            <span>ZP</span>
+                        </div>
+                    </button>
+                    <ul class="dropdown-menu dropdown-menu-end">
+                        <li><h6 class="dropdown-header">ZasylPro v2.0</h6></li>
+                        <li><hr class="dropdown-divider"></li>
+                        <li><a class="dropdown-item" href="#"><i class="bi bi-gear me-2"></i>Настройки</a></li>
+                        <li><a class="dropdown-item" href="#"><i class="bi bi-question-circle me-2"></i>Помощь</a></li>
+                        <li><a class="dropdown-item" href="#"><i class="bi bi-info-circle me-2"></i>О системе</a></li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Боковая панель фильтров -->
+    <div class="filter-sidebar" id="filterSidebar">
+        <div class="filter-sidebar-header">
+            <h5 class="mb-0">
+                <i class="bi bi-funnel me-2"></i>Фильтры и поиск
+            </h5>
+            <button class="btn btn-icon btn-close-sidebar" id="closeFilterSidebar">
+                <i class="bi bi-x-lg"></i>
+            </button>
+        </div>
+        
+        <div class="filter-sidebar-body">
+            <div class="filter-section">
+                <h6 class="filter-section-title">
+                    <i class="bi bi-calendar3 me-2"></i>Период
+                </h6>
+                <div class="mb-3">
+                    <label class="form-label">Дата засыла (с)</label>
+                    <input type="date" class="form-control form-control-lg" id="dateFrom">
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Дата засыла (по)</label>
+                    <input type="date" class="form-control form-control-lg" id="dateTo">
+                </div>
+            </div>
+            
+            <div class="filter-section">
+                <h6 class="filter-section-title">
+                    <i class="bi bi-building me-2"></i>Локация
+                </h6>
+                <div class="mb-3">
+                    <label class="form-label">Сортировочный центр</label>
+                    <select class="form-select select2" id="scFilter" multiple>
+                        <option value="">Все СЦ</option>
+                    </select>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Компания</label>
+                    <select class="form-select select2" id="companyFilter" multiple>
+                        <option value="">Все компании</option>
+                    </select>
+                </div>
+            </div>
+            
+            <div class="filter-section">
+                <h6 class="filter-section-title">
+                    <i class="bi bi-flag me-2"></i>Статус
+                </h6>
+                <div class="mb-3">
+                    <select class="form-select form-select-lg" id="statusFilter">
+                        <option value="all">Все статусы</option>
+                        <option value="Засыл">Засыл</option>
+                        <option value="Не засыл">Не засыл</option>
+                    </select>
+                </div>
+            </div>
+            
+            <div class="filter-section">
+                <h6 class="filter-section-title">
+                    <i class="bi bi-search me-2"></i>Быстрый поиск
+                </h6>
+                <div class="mb-3">
+                    <label class="form-label">Номер заказа</label>
+                    <div class="input-group">
+                        <span class="input-group-text"><i class="bi bi-hash"></i></span>
+                        <input type="text" class="form-control form-control-lg" id="orderSearch" placeholder="Введите номер...">
+                    </div>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">ФИО засыльщика</label>
+                    <div class="input-group">
+                        <span class="input-group-text"><i class="bi bi-person"></i></span>
+                        <input type="text" class="form-control form-control-lg" id="zasylshikSearch" placeholder="Введите ФИО...">
+                    </div>
+                </div>
+            </div>
+            
+            <div class="d-grid gap-2 mt-4">
+                <button class="btn btn-primary btn-lg" id="applyFiltersBtn">
+                    <i class="bi bi-search me-2"></i>Применить фильтры
+                </button>
+                <button class="btn btn-outline-secondary" id="resetFiltersBtn">
+                    <i class="bi bi-arrow-counterclockwise me-2"></i>Сбросить фильтры
+                </button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Оверлей для сайдбара -->
+    <div class="sidebar-overlay" id="sidebarOverlay"></div>
+
+    <!-- Основной контент -->
+    <main class="main-content" id="mainContent">
+        <div class="container-fluid">
+            <!-- Заголовок страницы -->
+            <div class="page-header animate__animated animate__fadeIn">
+                <div class="row align-items-center">
+                    <div class="col">
+                        <h1 class="page-title">
+                            Управление <span class="text-gradient">засылами</span>
+                        </h1>
+                        <p class="page-subtitle">Загрузите файлы и получите полный анализ данных</p>
+                    </div>
+                    <div class="col-auto">
+                        <div class="page-actions">
+                            <button class="btn btn-primary btn-lg" id="processBtn" disabled>
+                                <i class="bi bi-lightning-charge me-2"></i>
+                                Обработать данные
+                            </button>
+                            <button class="btn btn-success btn-lg ms-2 d-none" id="downloadBtn">
+                                <i class="bi bi-download me-2"></i>
+                                Скачать результат
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Загрузка файлов -->
+            <div class="row mb-4 animate__animated animate__fadeInUp">
+                <div class="col-lg-4 col-md-6 mb-4">
+                    <div class="upload-card" id="ordersUploadCard">
+                        <div class="upload-card-inner">
+                            <div class="upload-icon-wrapper">
+                                <div class="upload-icon bg-gradient-success">
+                                    <i class="bi bi-box-seam"></i>
+                                </div>
+                                <div class="upload-badge" id="ordersBadge" style="display: none;">
+                                    <i class="bi bi-check-circle-fill"></i>
+                                </div>
+                            </div>
+                            <h3 class="upload-title">Заказы</h3>
+                            <p class="upload-description">
+                                Загрузите файл с информацией о заказах, грузоместах, стоимости и адресах
+                            </p>
+                            <div class="upload-requirements">
+                                <span class="badge bg-light text-dark">.xlsx</span>
+                                <span class="badge bg-light text-dark">.xls</span>
+                                <span class="badge bg-light text-dark">.csv</span>
+                            </div>
+                            <button class="btn btn-outline-success upload-btn" onclick="document.getElementById('ordersFileInput').click()">
+                                <i class="bi bi-cloud-upload me-2"></i>Выбрать файл
+                            </button>
+                            <input type="file" id="ordersFileInput" accept=".xlsx,.xls,.csv" hidden>
+                            <div class="upload-file-info" id="ordersFileInfo" style="display: none;">
+                                <i class="bi bi-file-earmark-check text-success"></i>
+                                <span id="ordersFileName"></span>
+                            </div>
+                        </div>
+                        <div class="upload-card-glow"></div>
+                    </div>
+                </div>
+
+                <div class="col-lg-4 col-md-6 mb-4">
+                    <div class="upload-card" id="zasylsUploadCard">
+                        <div class="upload-card-inner">
+                            <div class="upload-icon-wrapper">
+                                <div class="upload-icon bg-gradient-info">
+                                    <i class="bi bi-send"></i>
+                                </div>
+                                <div class="upload-badge" id="zasylsBadge" style="display: none;">
+                                    <i class="bi bi-check-circle-fill"></i>
+                                </div>
+                            </div>
+                            <h3 class="upload-title">Засылы</h3>
+                            <p class="upload-description">
+                                Загрузите файл с данными о засылах, адресах, засыльщиках и датах
+                            </p>
+                            <div class="upload-requirements">
+                                <span class="badge bg-light text-dark">.xlsx</span>
+                                <span class="badge bg-light text-dark">.xls</span>
+                                <span class="badge bg-light text-dark">.csv</span>
+                            </div>
+                            <button class="btn btn-outline-info upload-btn" onclick="document.getElementById('zasylsFileInput').click()">
+                                <i class="bi bi-cloud-upload me-2"></i>Выбрать файл
+                            </button>
+                            <input type="file" id="zasylsFileInput" accept=".xlsx,.xls,.csv" hidden>
+                            <div class="upload-file-info" id="zasylsFileInfo" style="display: none;">
+                                <i class="bi bi-file-earmark-check text-success"></i>
+                                <span id="zasylsFileName"></span>
+                            </div>
+                        </div>
+                        <div class="upload-card-glow"></div>
+                    </div>
+                </div>
+
+                <div class="col-lg-4 col-md-6 mb-4">
+                    <div class="upload-card" id="shiftsUploadCard">
+                        <div class="upload-card-inner">
+                            <div class="upload-icon-wrapper">
+                                <div class="upload-icon bg-gradient-warning">
+                                    <i class="bi bi-people"></i>
+                                </div>
+                                <div class="upload-badge" id="shiftsBadge" style="display: none;">
+                                    <i class="bi bi-check-circle-fill"></i>
+                                </div>
+                            </div>
+                            <h3 class="upload-title">Смены</h3>
+                            <p class="upload-description">
+                                Загрузите файл со сменами и компаниями (опционально)
+                            </p>
+                            <div class="upload-requirements">
+                                <span class="badge bg-light text-dark">.xlsx</span>
+                                <span class="badge bg-light text-dark">.xls</span>
+                                <span class="badge bg-light text-dark">.csv</span>
+                            </div>
+                            <button class="btn btn-outline-warning upload-btn" onclick="document.getElementById('shiftsFileInput').click()">
+                                <i class="bi bi-cloud-upload me-2"></i>Выбрать файл
+                            </button>
+                            <input type="file" id="shiftsFileInput" accept=".xlsx,.xls,.csv" hidden>
+                            <div class="upload-file-info" id="shiftsFileInfo" style="display: none;">
+                                <i class="bi bi-file-earmark-check text-success"></i>
+                                <span id="shiftsFileName"></span>
+                            </div>
+                        </div>
+                        <div class="upload-card-glow"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Статистика -->
+            <div class="row mb-4 animate__animated animate__fadeInUp" id="statsCards">
+                <div class="col-xl-3 col-md-6 mb-4">
+                    <div class="stat-card">
+                        <div class="stat-card-body">
+                            <div class="stat-icon bg-primary bg-opacity-10">
+                                <i class="bi bi-inboxes text-primary"></i>
+                            </div>
+                            <div class="stat-info">
+                                <p class="stat-label">Всего грузомест</p>
+                                <h3 class="stat-value" id="totalOrders">0</h3>
+                                <div class="stat-change positive">
+                                    <span id="ordersChange">0%</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="stat-card-chart">
+                            <canvas id="ordersChart" height="40"></canvas>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-xl-3 col-md-6 mb-4">
+                    <div class="stat-card">
+                        <div class="stat-card-body">
+                            <div class="stat-icon bg-success bg-opacity-10">
+                                <i class="bi bi-check-circle text-success"></i>
+                            </div>
+                            <div class="stat-info">
+                                <p class="stat-label">Засылов</p>
+                                <h3 class="stat-value" id="totalZasyls">0</h3>
+                                <div class="stat-change positive">
+                                    <span id="zasylsPercentage">0%</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="stat-card-chart">
+                            <canvas id="zasylsChart" height="40"></canvas>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-xl-3 col-md-6 mb-4">
+                    <div class="stat-card">
+                        <div class="stat-card-body">
+                            <div class="stat-icon bg-danger bg-opacity-10">
+                                <i class="bi bi-x-circle text-danger"></i>
+                            </div>
+                            <div class="stat-info">
+                                <p class="stat-label">Не засылов</p>
+                                <h3 class="stat-value" id="totalNoZasyls">0</h3>
+                                <div class="stat-change negative">
+                                    <span id="noZasylsPercentage">0%</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="stat-card-chart">
+                            <canvas id="noZasylsChart" height="40"></canvas>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-xl-3 col-md-6 mb-4">
+                    <div class="stat-card">
+                        <div class="stat-card-body">
+                            <div class="stat-icon bg-info bg-opacity-10">
+                                <i class="bi bi-cash-stack text-info"></i>
+                            </div>
+                            <div class="stat-info">
+                                <p class="stat-label">Общая стоимость</p>
+                                <h3 class="stat-value" id="totalCost">0 ₽</h3>
+                                <div class="stat-change">
+                                    <span id="avgCost">0 ₽</span> средняя
+                                </div>
+                            </div>
+                        </div>
+                        <div class="stat-card-chart">
+                            <canvas id="costChart" height="40"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Таблица с данными -->
+            <div class="row animate__animated animate__fadeInUp">
+                <div class="col-12">
+                    <div class="table-card">
+                        <div class="table-card-header">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div>
+                                    <h5 class="mb-0">
+                                        <i class="bi bi-table me-2"></i>Сводная таблица засылов
+                                    </h5>
+                                    <small class="text-muted">
+                                        Показано записей: <span id="recordsCount" class="fw-bold">0</span>
+                                    </small>
+                                </div>
+                                <div class="d-flex gap-2">
+                                    <button class="btn btn-sm btn-outline-secondary" id="resetTableBtn" title="Сбросить">
+                                        <i class="bi bi-arrow-counterclockwise"></i>
+                                    </button>
+                                    <button class="btn btn-sm btn-outline-primary" id="refreshTableBtn" title="Обновить">
+                                        <i class="bi bi-arrow-repeat"></i>
+                                    </button>
+                                    <button class="btn btn-sm btn-outline-success" id="exportTableBtn" title="Экспорт">
+                                        <i class="bi bi-download"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="table-card-body">
+                            <div class="table-responsive">
+                                <table id="mainTable" class="table table-hover" style="width:100%">
+                                    <thead>
+                                        <tr>
+                                            <th>Номер грузоместа</th>
+                                            <th>Номер заказа</th>
+                                            <th>Стоимость</th>
+                                            <th>Кто отправил</th>
+                                            <th>Куда должны были отправить</th>
+                                            <th>Куда отправили засыл</th>
+                                            <th>Номер смены</th>
+                                            <th>Зона сортировки</th>
+                                            <th>ФИО засыльщика</th>
+                                            <th>Компания</th>
+                                            <th>Дата засыла</th>
+                                            <th>Почему не засыл?</th>
+                                            <th>Статус</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="tableBody">
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                        <div class="table-card-footer">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <small class="text-muted">
+                                    <i class="bi bi-clock me-1"></i>
+                                    Последнее обновление: <span id="lastUpdate">-</span>
+                                </small>
+                                <small class="text-muted">
+                                    <i class="bi bi-info-circle me-1"></i>
+                                    Кликните по строке для деталей
+                                </small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Модальное окно деталей -->
+    <div class="modal fade" id="detailsModal" tabindex="-1">
+        <div class="modal-dialog modal-lg modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">
+                        <i class="bi bi-info-circle me-2"></i>Детальная информация
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body" id="modalBody">
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Закрыть</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Модальное окно обработки -->
+    <div class="modal fade" id="processingModal" data-bs-backdrop="static" data-bs-keyboard="false">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-body text-center p-5">
+                    <div class="processing-animation">
+                        <div class="processing-circle">
+                            <div class="processing-circle-inner"></div>
+                        </div>
+                    </div>
+                    <h5 class="mt-4 mb-3">Обработка данных...</h5>
+                    <p class="text-muted mb-3" id="processingStatus">Подготовка файлов</p>
+                    <div class="processing-steps">
+                        <div class="processing-step active" data-step="1">
+                            <div class="step-indicator">1</div>
+                            <span>Загрузка</span>
+                        </div>
+                        <div class="processing-step" data-step="2">
+                            <div class="step-indicator">2</div>
+                            <span>Анализ</span>
+                        </div>
+                        <div class="processing-step" data-step="3">
+                            <div class="step-indicator">3</div>
+                            <span>Обработка</span>
+                        </div>
+                        <div class="processing-step" data-step="4">
+                            <div class="step-indicator">4</div>
+                            <span>Готово</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Кнопка "Наверх" -->
+    <button id="scrollToTop" class="btn btn-scroll-top" title="Наверх">
+        <i class="bi bi-chevron-up"></i>
+    </button>
+
+    <!-- Toast уведомления -->
+    <div class="toast-container position-fixed bottom-0 end-0 p-3" id="toastContainer">
+    </div>
+
+    <!-- Скрипты -->
+    <script src="https://code.jquery.com/jquery-3.7.0.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.datatables.net/1.13.4/js/jquery.dataTables.min.js"></script>
+    <script src="https://cdn.datatables.net/1.13.4/js/dataTables.bootstrap5.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+    <script src="https://cdn.sheetjs.com/xlsx-0.20.0/package/dist/xlsx.full.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/file-saver@2.0.5/dist/FileSaver.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    
+    <!-- Кастомные скрипты -->
+    <script src="js/dataProcessor.js"></script>
+    <script src="js/dataManager.js"></script>
+    <script src="js/tableRenderer.js"></script>
+    <script src="js/app.js"></script>
+    <script src="js/theme.js"></script>
+    <script src="js/charts.js"></script>
+    
+    <!-- Инициализация и скрытие прелоадера -->
+    <script>
+        // Принудительно скрываем прелоадер после загрузки
+        window.addEventListener('load', function() {
+            setTimeout(function() {
+                var preloader = document.getElementById('preloader');
+                if (preloader) {
+                    preloader.classList.add('hidden');
+                    setTimeout(function() {
+                        if (preloader) {
+                            preloader.style.display = 'none';
+                        }
+                    }, 500);
+                }
+            }, 500);
+        });
+        
+        // Запасной вариант - скрыть прелоадер через 3 секунды в любом случае
+        setTimeout(function() {
+            var preloader = document.getElementById('preloader');
+            if (preloader && !preloader.classList.contains('hidden')) {
+                preloader.classList.add('hidden');
+                setTimeout(function() {
+                    if (preloader) {
+                        preloader.style.display = 'none';
+                    }
+                }, 500);
+            }
+        }, 3000);
+        
+        // Обработка ошибок загрузки ресурсов
+        window.addEventListener('error', function(e) {
+            if (e.target && e.target.tagName === 'LINK') {
+                console.warn('Не удалось загрузить ресурс:', e.target.href);
+            }
+        }, true);
+    </script>
+</body>
+</html>
