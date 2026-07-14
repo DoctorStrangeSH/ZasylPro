@@ -17,60 +17,82 @@ class DataProcessor {
                     const data = new Uint8Array(e.target.result);
                     const workbook = XLSX.read(data, { type: 'array' });
                     
-                    const firstSheetName = workbook.SheetNames[0];
-                    const worksheet = workbook.Sheets[firstSheetName];
+                    console.log(`📁 Листов в файле: ${workbook.SheetNames.length}`);
+                    console.log('📋 Имена листов:', workbook.SheetNames);
                     
-                    const allData = XLSX.utils.sheet_to_json(worksheet, { 
-                        header: 1,
-                        defval: '',
-                        raw: false
-                    });
+                    let allHeaders = null;
+                    let allRows = [];
                     
-                    if (allData.length === 0) {
-                        reject(new Error('Файл пуст'));
-                        return;
-                    }
-                    
-                    // Разделяем заголовки по табуляции
-                    let rawHeaders = allData[0];
-                    let headers = [];
-                    rawHeaders.forEach(header => {
-                        const parts = String(header).split('\t');
-                        parts.forEach(part => {
-                            const trimmed = part.trim();
-                            if (trimmed) headers.push(trimmed);
+                    // Проходим по ВСЕМ листам
+                    workbook.SheetNames.forEach(sheetName => {
+                        const worksheet = workbook.Sheets[sheetName];
+                        
+                        const sheetData = XLSX.utils.sheet_to_json(worksheet, { 
+                            header: 1,
+                            defval: '',
+                            raw: false
+                        });
+                        
+                        if (sheetData.length === 0) return;
+                        
+                        console.log(`📄 Лист "${sheetName}": ${sheetData.length} строк`);
+                        
+                        // Первая строка — заголовки
+                        const rawHeaders = sheetData[0];
+                        let headers = [];
+                        rawHeaders.forEach(header => {
+                            const parts = String(header).split('\t');
+                            parts.forEach(part => {
+                                const trimmed = part.trim();
+                                if (trimmed) headers.push(trimmed);
+                            });
+                        });
+                        
+                        // Если заголовки ещё не сохранены — сохраняем
+                        if (!allHeaders) {
+                            allHeaders = headers;
+                            console.log('📋 Заголовки:', allHeaders);
+                        }
+                        
+                        // Данные (пропускаем заголовки)
+                        const rows = sheetData.slice(1);
+                        
+                        rows.forEach(row => {
+                            let allValues = [];
+                            row.forEach(cell => {
+                                const parts = String(cell).split('\t');
+                                parts.forEach(part => allValues.push(part.trim()));
+                            });
+                            
+                            // Проверяем что строка не пустая
+                            const hasData = allValues.some(v => v !== '' && v !== 'Общий итог' && v !== 'Итого');
+                            if (hasData) {
+                                allRows.push(allValues);
+                            }
                         });
                     });
                     
-                    console.log('📋 Заголовки:', headers);
-                    
-                    // Данные
-                    const rows = allData.slice(1);
+                    // Конвертируем в объекты
                     const result = [];
-                    
-                    rows.forEach(row => {
-                        let allValues = [];
-                        row.forEach(cell => {
-                            const parts = String(cell).split('\t');
-                            parts.forEach(part => allValues.push(part.trim()));
-                        });
-                        
+                    allRows.forEach(values => {
                         const obj = {};
-                        headers.forEach((header, index) => {
-                            obj[header] = allValues[index] !== undefined ? allValues[index] : '';
+                        allHeaders.forEach((header, index) => {
+                            obj[header] = values[index] !== undefined ? values[index] : '';
                         });
-                        
-                        const hasData = Object.values(obj).some(v => v !== '' && v !== 'Общий итог');
-                        if (hasData) result.push(obj);
+                        result.push(obj);
                     });
                     
-                    console.log(`📄 Загружено ${result.length} записей`);
+                    console.log(`📊 Всего загружено: ${result.length} записей`);
+                    
+                    if (result.length > 0) {
+                        console.log('📋 Первая запись:', result[0]);
+                    }
                     
                     resolve({
                         data: result,
-                        sheetName: firstSheetName,
+                        sheetName: workbook.SheetNames.join(', '),
                         rowCount: result.length,
-                        headers: headers
+                        headers: allHeaders
                     });
                     
                 } catch (error) {
@@ -239,6 +261,7 @@ class DataProcessor {
      * 2. Если зона содержит "Первичная приемка" или "Приемка" - ФИО не ставим
      * 3. "Почему не засыл" - оставляем пустым всегда
      * 4. Статус - не заполняем (пользователь ставит сам)
+     * 5. Пропускаем зоны: Воротная группа, Бригадир, SKK, Зона сортировки возвратов, Предсортировка возвратов
      */
     extractDataFromLogs(allLogs) {
         const result = {
@@ -258,37 +281,68 @@ class DataProcessor {
             return this.parseDate(b.scanned_at) - this.parseDate(a.scanned_at);
         });
         
+        // Список зон, которые нужно пропускать
+        const skipZones = [
+            'воротная группа',
+            'бригадир',
+            'skk',
+            'специалистов по контролю качества',
+            'зона сортировки возвратов',
+            'зона предсортировки возвратов',
+            'vor',
+            'vso'
+        ];
+        
+        // Проверяем, является ли зона "пропускаемой"
+        const isSkipZone = (zoneName) => {
+            if (!zoneName) return true; // Пустая зона тоже пропускается
+            const lower = zoneName.toLowerCase();
+            return skipZones.some(skip => lower.includes(skip));
+        };
+        
         // Ищем лучшую запись для зоны и даты
         let bestLog = null;
         
-        // 1. Ищем SORT с OK (не робот)
+        // 1. Ищем SORT с OK (не робот) и НЕ в пропускаемой зоне
         bestLog = sortedLogs.find(row => 
             row.flow_name === 'SORT' && 
             row.result === 'OK' && 
-            !String(row.username).includes('sc-robot')
+            !String(row.username).includes('sc-robot') &&
+            !isSkipZone(row.zone_name)
         );
         
-        // 2. Ищем SORT с OK (любой)
+        // 2. Ищем SORT с OK (любой) и НЕ в пропускаемой зоне
         if (!bestLog) {
             bestLog = sortedLogs.find(row => 
-                row.flow_name === 'SORT' && row.result === 'OK'
+                row.flow_name === 'SORT' && 
+                row.result === 'OK' &&
+                !isSkipZone(row.zone_name)
             );
         }
         
-        // 3. Ищем любую операцию с OK (не робот)
+        // 3. Ищем любую операцию с OK (не робот) и НЕ в пропускаемой зоне
         if (!bestLog) {
             bestLog = sortedLogs.find(row => 
                 row.result === 'OK' && 
-                !String(row.username).includes('sc-robot')
+                !String(row.username).includes('sc-robot') &&
+                !isSkipZone(row.zone_name)
             );
         }
         
-        // 4. Любая операция с OK
+        // 4. Любая операция с OK и НЕ в пропускаемой зоне
         if (!bestLog) {
-            bestLog = sortedLogs.find(row => row.result === 'OK');
+            bestLog = sortedLogs.find(row => 
+                row.result === 'OK' &&
+                !isSkipZone(row.zone_name)
+            );
         }
         
-        // 5. Первая попавшаяся
+        // 5. Первая попавшаяся НЕ в пропускаемой зоне
+        if (!bestLog) {
+            bestLog = sortedLogs.find(row => !isSkipZone(row.zone_name));
+        }
+        
+        // 6. Если все зоны пропускаемые — берем первую попавшуюся
         if (!bestLog) {
             bestLog = sortedLogs[0];
         }
@@ -298,6 +352,20 @@ class DataProcessor {
         
         // Заполняем зону
         result.zoneName = bestLog.zone_name || '';
+        
+        // Если зона всё ещё пропускаемая — ищем предыдущий скан с нормальной зоной
+        if (isSkipZone(result.zoneName)) {
+            const normalLog = sortedLogs.find(row => 
+                !isSkipZone(row.zone_name) &&
+                row.place_external_id === bestLog.place_external_id
+            );
+            
+            if (normalLog) {
+                result.zoneName = normalLog.zone_name || result.zoneName;
+                result.date = this.formatDate(normalLog.scanned_at) || result.date;
+                bestLog = normalLog;
+            }
+        }
         
         // Проверяем: если зона содержит "первичная приемка" или "приемка" - ФИО не ставим
         const zoneLower = result.zoneName.toLowerCase();
@@ -314,7 +382,8 @@ class DataProcessor {
             const humanLog = sortedLogs.find(row => 
                 row.username && 
                 !String(row.username).includes('sc-robot') &&
-                row.place_external_id === bestLog.place_external_id
+                row.place_external_id === bestLog.place_external_id &&
+                !isSkipZone(row.zone_name)
             );
             result.username = humanLog ? humanLog.username : '';
         } else {
